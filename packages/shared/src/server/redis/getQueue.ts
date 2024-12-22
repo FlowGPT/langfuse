@@ -12,6 +12,7 @@ import { TraceDeleteQueue } from "./traceDelete";
 import { ProjectDeleteQueue } from "./projectDelete";
 import { PostHogIntegrationQueue } from "./postHogIntegrationQueue";
 import { PostHogIntegrationProcessingQueue } from "./postHogIntegrationProcessingQueue";
+import { CostTrackEventQueue } from "./costTrackEventQueue";
 
 export function getQueue(queueName: QueueName): Queue | null {
   switch (queueName) {
@@ -39,6 +40,8 @@ export function getQueue(queueName: QueueName): Queue | null {
       return PostHogIntegrationQueue.getInstance();
     case QueueName.PostHogIntegrationProcessingQueue:
       return PostHogIntegrationProcessingQueue.getInstance();
+    case QueueName.CostTrackEventQueue:
+      return CostTrackEventQueue.getInstance();
     case QueueName.IngestionSecondaryQueue:
       return SecondaryIngestionQueue.getInstance();
     default:

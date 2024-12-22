@@ -36,6 +36,8 @@ import {
   TraceUpsertQueue,
   QueueJobs,
   recordIncrement,
+  getQueue,
+  QueueName,
 } from "@langfuse/shared/src/server";
 
 import { tokenCount } from "../../features/tokenisation/usage";
@@ -413,6 +415,52 @@ export class IngestionService {
       TableName.Observations,
       finalObservationRecord,
     );
+
+    const costTrackQueue = getQueue(QueueName.CostTrackEventQueue);
+    if (costTrackQueue) {
+      const metadata = finalObservationRecord.metadata || {};
+      const rawBody = metadata.rawBody ? JSON.parse(metadata.rawBody) : {};
+
+      // TODO: need check and confirm field value:
+      // default device type
+      // which project id ( now it's Langfuse config project )
+      const hasUsageDetails =
+        finalObservationRecord.usage_details &&
+        Object.keys(finalObservationRecord.usage_details).length > 0;
+      const hasCostDetails =
+        finalObservationRecord.cost_details &&
+        Object.keys(finalObservationRecord.cost_details).length > 0;
+
+      // check usage detail and cost detail, check userId?
+      if (hasUsageDetails && hasCostDetails) {
+        const costTrackEvent = {
+          user_id: rawBody.userId || undefined,
+          deviceType: metadata.deviceType || "",
+          env: metadata.env || process.env.NODE_ENV || "staging",
+          app_version: metadata.app_version || "",
+          app_platform: metadata.app_platform || "",
+          model: rawBody.model || finalObservationRecord.provided_model_name,
+          project_id: finalObservationRecord.project_id,
+          prompt_id: rawBody.promptId || finalObservationRecord.prompt_id,
+          input_token: finalObservationRecord.usage_details?.input || 0,
+          output_token: finalObservationRecord.usage_details?.output || 0,
+          total_token: finalObservationRecord.usage_details?.total || 0,
+          input_cost: finalObservationRecord.cost_details?.input || 0,
+          output_cost: finalObservationRecord.cost_details?.output || 0,
+          total_cost: finalObservationRecord.cost_details?.total || 0,
+        };
+
+        try {
+          await costTrackQueue.add(QueueJobs.CostTrackEventJob, costTrackEvent);
+          logger.info("Cost track event sent successfully", costTrackEvent);
+        } catch (error) {
+          logger.error("Failed to send cost track event", {
+            error,
+            costTrackEvent,
+          });
+        }
+      }
+    }
   }
 
   private async mergeScoreRecords(params: {
