@@ -36,6 +36,8 @@ import {
   TraceUpsertQueue,
   QueueJobs,
   recordIncrement,
+  getQueue,
+  QueueName,
 } from "@langfuse/shared/src/server";
 
 import { tokenCount } from "../../features/tokenisation/usage";
@@ -413,6 +415,43 @@ export class IngestionService {
       TableName.Observations,
       finalObservationRecord,
     );
+
+    const costTrackQueue = getQueue(QueueName.CostTrackEventQueue);
+    if (costTrackQueue) {
+      const metadata = finalObservationRecord.metadata || {};
+
+      const hasUsageDetails =
+        finalObservationRecord.usage_details &&
+        Object.keys(finalObservationRecord.usage_details).length > 0;
+      const hasCostDetails =
+        finalObservationRecord.cost_details &&
+        Object.keys(finalObservationRecord.cost_details).length > 0;
+
+      // check usage detail and cost detail
+      if (hasUsageDetails && hasCostDetails) {
+        const costTrackEvent = {
+          model: finalObservationRecord.provided_model_name || undefined,
+          projectId: finalObservationRecord.project_id,
+          inputToken: finalObservationRecord.usage_details?.input || 0,
+          outputToken: finalObservationRecord.usage_details?.output || 0,
+          totalToken: finalObservationRecord.usage_details?.total || 0,
+          inputCost: finalObservationRecord.cost_details?.input || 0,
+          outputCost: finalObservationRecord.cost_details?.output || 0,
+          totalCost: finalObservationRecord.cost_details?.total || 0,
+          ...metadata,
+        };
+
+        try {
+          await costTrackQueue.add(QueueJobs.CostTrackEventJob, costTrackEvent);
+          logger.debug("Cost track event sent successfully", costTrackEvent);
+        } catch (error) {
+          logger.error("Failed to send cost track event", {
+            error,
+            costTrackEvent,
+          });
+        }
+      }
+    }
   }
 
   private async mergeScoreRecords(params: {

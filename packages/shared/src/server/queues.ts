@@ -118,6 +118,7 @@ export enum QueueName {
   ExperimentCreate = "experiment-create-queue",
   PostHogIntegrationQueue = "posthog-integration-queue",
   PostHogIntegrationProcessingQueue = "posthog-integration-processing-queue",
+  CostTrackEventQueue = "cost-track-event-queue",
   CoreDataS3ExportQueue = "core-data-s3-export-queue",
 }
 
@@ -135,6 +136,7 @@ export enum QueueJobs {
   ExperimentCreateJob = "experiment-create-job",
   PostHogIntegrationJob = "posthog-integration-job",
   PostHogIntegrationProcessingJob = "posthog-integration-processing-job",
+  CostTrackEventJob = "cost-track-event-job",
   CoreDataS3ExportJob = "core-data-s3-export-job",
 }
 
@@ -204,5 +206,17 @@ export type TQueueJobTypes = {
     id: string;
     payload: PostHogIntegrationProcessingEventType;
     name: QueueJobs.PostHogIntegrationProcessingJob;
+  };
+  [QueueName.CostTrackEventQueue]: {
+    timestamp: Date;
+    id: string;
+    payload: {
+      traceId: string;
+      projectId: string;
+      totalCost: number;
+      costDetails: Record<string, unknown>;
+      usageDetails: Record<string, unknown>;
+    };
+    name: QueueJobs.CostTrackEventJob;
   };
 };
