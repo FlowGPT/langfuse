@@ -419,7 +419,6 @@ export class IngestionService {
     const costTrackQueue = getQueue(QueueName.CostTrackEventQueue);
     if (costTrackQueue) {
       const metadata = finalObservationRecord.metadata || {};
-      const rawBody = metadata.rawBody ? JSON.parse(metadata.rawBody) : {};
 
       const hasUsageDetails =
         finalObservationRecord.usage_details &&
@@ -428,13 +427,11 @@ export class IngestionService {
         finalObservationRecord.cost_details &&
         Object.keys(finalObservationRecord.cost_details).length > 0;
 
-      // check usage detail and cost detail, should check userId?
+      // check usage detail and cost detail
       if (hasUsageDetails && hasCostDetails) {
         const costTrackEvent = {
-          userId: rawBody.userId || undefined,
-          model: rawBody.model || finalObservationRecord.provided_model_name,
+          model: finalObservationRecord.provided_model_name || undefined,
           projectId: finalObservationRecord.project_id,
-          promptId: rawBody.promptId || finalObservationRecord.prompt_id,
           inputToken: finalObservationRecord.usage_details?.input || 0,
           outputToken: finalObservationRecord.usage_details?.output || 0,
           totalToken: finalObservationRecord.usage_details?.total || 0,
