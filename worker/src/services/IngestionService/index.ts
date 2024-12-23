@@ -421,9 +421,6 @@ export class IngestionService {
       const metadata = finalObservationRecord.metadata || {};
       const rawBody = metadata.rawBody ? JSON.parse(metadata.rawBody) : {};
 
-      // TODO: need check and confirm field value:
-      // default device type
-      // which project id ( now it's Langfuse config project )
       const hasUsageDetails =
         finalObservationRecord.usage_details &&
         Object.keys(finalObservationRecord.usage_details).length > 0;
@@ -431,7 +428,7 @@ export class IngestionService {
         finalObservationRecord.cost_details &&
         Object.keys(finalObservationRecord.cost_details).length > 0;
 
-      // check usage detail and cost detail, check userId?
+      // check usage detail and cost detail, should check userId?
       if (hasUsageDetails && hasCostDetails) {
         const costTrackEvent = {
           userId: rawBody.userId || undefined,
