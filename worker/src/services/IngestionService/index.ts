@@ -434,25 +434,22 @@ export class IngestionService {
       // check usage detail and cost detail, check userId?
       if (hasUsageDetails && hasCostDetails) {
         const costTrackEvent = {
-          user_id: rawBody.userId || undefined,
-          deviceType: metadata.deviceType || "",
-          env: metadata.env || process.env.NODE_ENV || "staging",
-          app_version: metadata.app_version || "",
-          app_platform: metadata.app_platform || "",
+          userId: rawBody.userId || undefined,
           model: rawBody.model || finalObservationRecord.provided_model_name,
-          project_id: finalObservationRecord.project_id,
-          prompt_id: rawBody.promptId || finalObservationRecord.prompt_id,
-          input_token: finalObservationRecord.usage_details?.input || 0,
-          output_token: finalObservationRecord.usage_details?.output || 0,
-          total_token: finalObservationRecord.usage_details?.total || 0,
-          input_cost: finalObservationRecord.cost_details?.input || 0,
-          output_cost: finalObservationRecord.cost_details?.output || 0,
-          total_cost: finalObservationRecord.cost_details?.total || 0,
+          projectId: finalObservationRecord.project_id,
+          promptId: rawBody.promptId || finalObservationRecord.prompt_id,
+          inputToken: finalObservationRecord.usage_details?.input || 0,
+          outputToken: finalObservationRecord.usage_details?.output || 0,
+          totalToken: finalObservationRecord.usage_details?.total || 0,
+          inputCost: finalObservationRecord.cost_details?.input || 0,
+          outputCost: finalObservationRecord.cost_details?.output || 0,
+          totalCost: finalObservationRecord.cost_details?.total || 0,
+          ...metadata,
         };
 
         try {
           await costTrackQueue.add(QueueJobs.CostTrackEventJob, costTrackEvent);
-          logger.info("Cost track event sent successfully", costTrackEvent);
+          logger.debug("Cost track event sent successfully", costTrackEvent);
         } catch (error) {
           logger.error("Failed to send cost track event", {
             error,
